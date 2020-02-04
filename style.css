@@ -1,0 +1,18 @@
+.grid {
+    border: solid black 1px;
+}
+
+.alive {
+    background-color: black;
+    border: solid gray 1px;
+}
+
+.dead {
+    background-color: white;
+    border: solid black 1px;
+}
+
+.alive, .dead {
+    width: 40px;
+    height: 40px;
+}

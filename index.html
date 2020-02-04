@@ -1,0 +1,28 @@
+<doctype html>
+<html>
+
+    <head>
+        <title>
+            Conways's Game of Life
+        </title>
+        <link rel="stylesheet" type="text/css" href="style.css"/>
+    </head>
+
+    <body>
+        <div id="app">
+            <h1>{{ header }}</h1>
+            <button v-on:click=playPauseClick> {{labBtnPlayPause}} </button>
+            <button v-on:click=clearClick> Clear </button>
+            <input type="file" @change="loadFile($event)">
+            <table class="grid">
+                <tr v-for="row in rows">
+                    <th v-for="cell in row" v-bind:class=cell.status v-on:click=cell.toggleStatus></th>
+                </tr>
+            </table>
+        </div>
+    </body>
+
+    <script src="vue-debug.js"></script>
+    <script src="main.js"></script>
+
+</html>
