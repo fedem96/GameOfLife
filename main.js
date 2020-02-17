@@ -1,25 +1,192 @@
+class Cell {
+    constructor(status, row, column){
+        if(status === 0)
+            status = "dead";
+        else if (status === 1)
+            status = "alive";
+
+        this.status = status;
+        this.row = row;
+        this.column = column;
+        this.observers = [];
+    }
+
+    toggleStatus() {
+        if (this.status == "dead")
+            this.status = "alive";
+        else
+            this.status = "dead";
+        this._notifyObservers();
+        return this;
+    }
+
+    subscribe(observer){
+        this.observers.push(observer);
+        return this;
+    }
+
+    unsubscribe(observer){
+        let i = this.observers.indexOf(observer);
+        if(i != -1)
+            this.observers.splice(i, 1);
+        return this;
+    }
+
+    _notifyObservers(){
+        for (const observer of this.observers) {
+            observer.update(this);
+        }
+    }
+
+}
+
+
+class Board{
+    constructor(maxWidth, maxHeight, visibleWidth, visibleHeight){
+        this.maxWidth = maxWidth;
+        this.maxHeight = maxHeight;
+
+        this.topLeftCornerX = maxWidth/2;
+        this.topLeftCornerY = maxHeight/2;
+        this.visibleHeight = visibleHeight;
+        this.visibleWidth = visibleWidth;
+
+        this._aliveCellsRC = new Set();
+        this.visibleGrid = [];
+        this._updateVisibleGrid();
+        this.fps = 30;
+    }
+
+    _updateVisibleGrid(){
+        let tx = this.topLeftCornerX;
+        let ty = this.topLeftCornerY;
+        let vw = this.visibleWidth;
+        let vh = this.visibleHeight;
+        
+        let newVisibleGrid = [];
+        for (let r = ty; r < ty + vh; r++) {
+            let row = [];
+            for (let c = tx; c < tx + vw; c++) {
+                row.push(new Cell("dead", r, c).subscribe(this));
+            }
+            newVisibleGrid.push(row);
+        }
+        for (let pair of this._aliveCellsRC) {
+            pair = JSON.parse(pair);
+            let cy = pair[0] - ty;
+            let cx = pair[1] - tx;
+            if (cx < 0 || cx >= vw || cy < 0 || cy >= vh) continue;
+            newVisibleGrid[cy][cx].toggleStatus();
+        }
+        this.visibleGrid = newVisibleGrid;
+    }
+
+    update(cell){
+        if(cell.status == "alive"){
+            if(!([cell.row, cell.column] in this._aliveCellsRC))
+                this._aliveCellsRC.add(JSON.stringify([cell.row, cell.column]));
+        } else {
+            if([cell.row, cell.column] in this._aliveCellsRC)
+                this._aliveCellsRC.delete(JSON.stringify([cell.row, cell.column]));
+        }
+    }
+
+    step(){
+        if(this.status === "paused")
+            return;
+
+        // calculate number of neighbors
+        let numNeighbors = {};
+        for (const pair of this._aliveCellsRC) {
+            let pairNeighbors = this._getNeighbors(pair);
+            for(const neigh of pairNeighbors){
+                if(numNeighbors[neigh] == undefined)
+                    numNeighbors[neigh] = 0;
+                numNeighbors[neigh]++;
+            }
+        }
+
+        // set new alive cells
+        let newAliveCellsRC = new Set();
+        for (let pair in numNeighbors) {
+            let num = numNeighbors[pair];
+            if(num == 3 || (num == 2 && this._aliveCellsRC.has(pair)))
+                newAliveCellsRC.add(pair);
+        }
+        this._aliveCellsRC = newAliveCellsRC;
+
+        // update visible grid
+        this._updateVisibleGrid();
+    }
+
+    clear(){
+        this._aliveCellsRC = new Set();
+        this._updateVisibleGrid();
+    }
+
+    _getNeighbors(pair){
+        pair = JSON.parse(pair);
+        let neighbors = [];
+
+        for (let i = -1; i <= 1; i++){
+            for (let j = -1; j <= 1; j++){
+                if(i == 0 && i == j)
+                    continue;
+                let r = pair[0]+i;
+                let c = pair[1]+j;
+                if(r >= 0 && r < this.maxHeight && c >= 0 && c < this.maxWidth)
+                    neighbors.push(JSON.stringify([r, c]));
+            }
+        }
+
+        return neighbors;
+    }
+
+    setContent(aliveCellsRC){
+        this._aliveCellsRC = aliveCellsRC;
+        this._updateVisibleGrid();
+    }
+    setTopCorner(x, y){
+        this.topLeftCornerX = x;
+        this.topLeftCornerY = y;
+        this._updateVisibleGrid();
+    }
+    setDimension(maxR, maxC){
+        this.visibleWidth = maxC;
+        this.visibleHeight = maxR;
+        this._updateVisibleGrid();
+    }
+
+}
+
+
 var app = new Vue({
     el: '#app',
     data: {
         status: "paused", // paused | playing
         header: "Conway's Game of Life",
         labBtnPlayPause: "Play",
-        rows: [
-            [new Cell("alive"), new Cell("dead"), new Cell("dead"), new Cell("dead"), new Cell("alive")],
-            [new Cell("dead"), new Cell("dead"), new Cell("dead"), new Cell("alive"), new Cell("dead")],
-            [new Cell("alive"), new Cell("dead"), new Cell("alive"), new Cell("dead"), new Cell("dead")],
-            [new Cell("alive"), new Cell("alive"), new Cell("dead"), new Cell("dead"), new Cell("alive")]
-        ],
-        padding: 20
+        board: new Board(1024, 1024, 7, 7),
+        padding: 20,
+        fps: 30
+    },
+    created: function () {
+        
     },
     methods: {
+
+
         loadFile: function(event){
             console.log(event.target);
             let file = event.target.files[0];
             let _this = this;
             let onload = function(fileContent) {
-                let decodedContent = _this.decodeRLE(fileContent); 
-                _this.rows = _this.pad(decodedContent.map(r => r.map(num => new Cell(num))), _this.padding);
+                let aliveCellsRC, maxR, maxC;
+                [aliveCellsRC, maxR, maxC] = _this.decodeRLE(fileContent); 
+                _this.board.setContent(aliveCellsRC);
+                _this.board.setTopCorner(0, 0);
+                _this.board.setDimension(maxR, maxC);
+                // _this.rows = _this.pad(decodedContent.map(r => r.map(num => new Cell(num))), _this.padding);
             };
             this.readFileAsync(file, onload);
         },
@@ -44,9 +211,9 @@ var app = new Vue({
             let height = parseInt(y);
             
             let rle = lines.slice(l).join("").trim();
-            let matrix = [];
-            let row = [];
+            let aliveCellsRC = new Set();
             let runLength = 1;
+            let r = 0; let c = 0;
             while (rle !== ""){
                 const regex = /[o,b,!,$]/;
                 let nextNonNumber = rle.search(regex);
@@ -62,25 +229,22 @@ var app = new Vue({
                     case 'b':
                         console.assert(runLength > 0);
                         for (let i=0; i<runLength; i++)
-                            row.push(0);
+                            c++;
                         runLength = 1;
                         break;
                     case 'o':
                         console.assert(runLength > 0);
                         for (let i=0; i<runLength; i++)
-                            row.push(1);
+                            aliveCellsRC.add(JSON.stringify([r, c++]));
                         runLength = 1;
                         break;
                     case '!':
                         console.assert(rle === "");
                     case '$':
-                        console.assert(row.length <= width);
-                        for(let i=row.length; i<width; i++)
-                            row.push(0);
-                        matrix.push(row);
-                        for(let i=1; i<runLength; i++)
-                            matrix.push(new Array(width).fill(0));
-                        row = [];
+                        console.assert(c <= width);
+                        c = 0;
+                        for(let i=0; i<runLength; i++)
+                            r++;
                         runLength = 1;
                         break;
                     default:
@@ -89,24 +253,42 @@ var app = new Vue({
                         runLength = parseInt(token);
                 }
             }
-            console.assert(matrix.length === height);
-            return matrix;
+            return [aliveCellsRC, height, width];
         },
-        pad: function(rows, padding){
-            let width = rows[0].length;
-            
-            // pad horizontally
-            rows = rows.map(row => new Array(padding).fill(0).map(_ => new Cell("dead")).concat(row).concat(new Array(padding).fill(0).map(_ => new Cell("dead"))));
-            
-            // pad top and bottom
-            let newWidth = width + 2 * padding;
-
-            for (let i = 0; i < padding; i++){
-                rows.unshift(new Array(newWidth).fill(0).map(_ => new Cell("dead")));
-                rows.push(new Array(newWidth).fill(0).map(_ => new Cell("dead")));
+        pad: function(grid, padding){
+            let paddingLeft, paddingRight, paddingTop, paddingBottom;
+            if(padding.length == undefined){ // padding is a number
+                paddingLeft = padding; paddingRight = padding; paddingTop = padding; paddingBottom = padding;
+            } else { // padding is an array
+                console.assert(padding.length == 2 || padding.length == 4);
+                if(padding.length == 2){
+                    paddingLeft = padding[0]; paddingRight = padding[0];
+                    paddingTop = padding[1]; paddingBottom = padding[1];
+                } else {
+                    paddingTop = padding[0];
+                    paddingRight = padding[1];
+                    paddingBotton = padding[2];
+                    paddingLeft = padding[3];
+                }
             }
 
-            return rows;
+            let width = grid[0].length;
+            
+            // pad horizontally
+            grid = grid.map(row => new Array(paddingLeft).fill(0).map(_ => new Cell("dead")).concat(row).concat(new Array(paddingRight).fill(0).map(_ => new Cell("dead"))));
+            
+            // pad top and bottom
+            let newWidth = width + paddingLeft + paddingRight;
+
+            for (let i = 0; i < paddingTop; i++){
+                grid.unshift(new Array(newWidth).fill(0).map(_ => new Cell("dead")));
+            }
+
+            for (let i = 0; i < paddingBottom; i++){
+                grid.push(new Array(newWidth).fill(0).map(_ => new Cell("dead")));
+            }
+
+            return grid;
         },
         
         // _loadFile: function(){
@@ -136,120 +318,17 @@ var app = new Vue({
         },
 
         gameStep: function(){
-            let start = performance.now();
-            if(this.status === "paused")
+            if(this.status == "paused")
                 return;
+            let start = performance.now();
 
-            let height = this.rows.length;
-            let width = this.rows[0].length;
+            this.board.step();
 
-            let newRows = new Array(height).fill(0).map(_ =>new Array(width).fill(0));
-
-            
-            let outStr = "";
-            for (let r = 0; r < height; r++) {
-                outStr += newRows[r].join(",");
-                outStr += "\n"
-            }
-            // console.log(outStr);
-
-            // central cells
-            for (let r = 1; r < height-1; r++) {
-                for (let c = 1; c < width-1; c++) {
-                    if(this.rows[r][c].status[0] === "d") // dead
-                        continue;
-
-                    for (let i = -1; i < 2; i++) {
-                        for (let j = -1; j < 2; j++) {
-                            if(i === j && i === 0)
-                                continue;
-                            newRows[r+i][c+j]++;
-                        }
-                    }
-                }
-            }
-
-            // first row and last row
-            for (let c = 1; c < width-1; c++) {
-                if(this.rows[0][c].status[0] === "a") // alive
-                    for (let i = 0; i < 2; i++)
-                        for (let j = -1; j < 2; j++) {
-                            if(i === j && i === 0)
-                                continue;
-                            newRows[i][c+j]++;
-                        }
-                
-                if(this.rows[height-1][c].status[0] === "a") // alive
-                    for (let i = -1; i < 1; i++)
-                        for (let j = -1; j < 2; j++) {
-                            if(i === j && i === 0)
-                                continue;
-                            newRows[height-1+i][c+j]++;
-                        }
-            }
-
-            // first column and last column
-            for (let r = 1; r < height-1; r++) {
-                if(this.rows[r][0].status[0] === "a") // alive
-                    for (let i = -1; i < 2; i++)
-                        for (let j = 0; j < 2; j++) {
-                            if(i === j && i === 0)
-                                continue;
-                            newRows[r+i][j]++;
-                        }
-                
-                if(this.rows[r][width-1].status[0] === "a") // alive
-                    for (let i = -1; i < 2; i++)
-                        for (let j = -1; j < 1; j++) {
-                            if(i === j && i === 0)
-                                continue;
-                            newRows[r+i][width-1+j]++;
-                        }
-            }
-
-            // four corners
-            if(this.rows[0][0].status[0] === "a"){ // alive
-                newRows[0][1]++; newRows[1][1]++; newRows[1][0]++;
-            }
-            if(this.rows[0][width-1].status[0] === "a"){ // alive
-                newRows[0][width-2]++; newRows[1][width-2]++; newRows[1][width-1]++;
-            }
-            if(this.rows[height-1][0].status[0] === "a"){ // alive
-                newRows[height-2][0]++; newRows[height-2][1]++; newRows[height-1][1]++;
-            }
-            if(this.rows[height-1][width-1].status[0] === "a"){ // alive
-                newRows[height-1][width-2]++; newRows[height-2][width-2]++; newRows[height-2][width-1]++;
-            }
-
-            outStr = "";
-            for (let r = 0; r < height; r++) {
-                outStr += newRows[r].join(",");
-                outStr += "\n"
-            }
-            // console.log(outStr);
-
-            // create new grid using Game of Life rules
-            for (let r = 0; r < height; r++) {
-                for (let c = 0; c < width; c++) {
-                    let numNeighbors = newRows[r][c];
-                    if(numNeighbors === 3 || (numNeighbors === 2 && this.rows[r][c].status[0] == "a"))
-                        newRows[r][c] = new Cell("alive");
-                    else
-                        newRows[r][c] = new Cell("dead");
-                }
-            }
-
-            this.rows = newRows;
-
-            // console.log(this.rows);
-
-            setTimeout(this.gameStep, 20);
-
-            let fps = 30;
-            let waitingTime = Math.floor(1000/fps);
+            let waitingTime = Math.floor(1000/this.fps);
+            // console.log(waitingTime)
             let elapsed = performance.now() - start;
-            waitingTime = Math.max(0, waitingTime-elapsed)
-            // console.log("elapsed: " + elapsed)
+            waitingTime = Math.max(0, waitingTime-elapsed);
+            setTimeout(this.gameStep, waitingTime);
         },
 
         stopPlaying: function(){
@@ -259,27 +338,7 @@ var app = new Vue({
 
         clearClick: function(){
             this.stopPlaying();
-            let height = this.rows.length;
-            let width = this.rows[0].length;
-            this.rows = new Array(height).fill(0).map(_ => new Array(width).fill(0).map(_ => new Cell("dead")));
+            this.board.clear();
         }
     },
-})
-
-function Cell(status) {
-
-    if(status === 0)
-        status = "dead";
-    else if (status === 1)
-        status = "alive";
-
-    let _this = this;
-    this.status = status;
-
-    this.toggleStatus = function(){
-        if (_this.status == "dead")
-            _this.status = "alive";
-        else
-            _this.status = "dead";
-    }
-}
+});

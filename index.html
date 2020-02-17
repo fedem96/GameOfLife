@@ -14,15 +14,20 @@
             <button v-on:click=playPauseClick> {{labBtnPlayPause}} </button>
             <button v-on:click=clearClick> Clear </button>
             <input type="file" @change="loadFile($event)">
+            <div class="slidercontainer">
+                <input type="range" min="1" max="120" class="slider" id="sliderFPS" v-model=fps>
+                <label for="sliderFPS">{{fps}} FPS</label>
+                
+            </div>
             <table class="grid">
-                <tr v-for="row in rows">
-                    <th v-for="cell in row" v-bind:class=cell.status v-on:click=cell.toggleStatus></th>
+                <tr v-for="row in board.visibleGrid">
+                    <th v-for="cell in row" v-bind:class=cell.status v-on:click=cell.toggleStatus()></th>
                 </tr>
             </table>
         </div>
     </body>
 
     <script src="vue-debug.js"></script>
-    <script src="main.js"></script>
+    <script src="main.js" ></script>
 
 </html>
