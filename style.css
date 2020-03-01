@@ -1,3 +1,24 @@
+/* Blue theme */
+/* :root {
+    --dark-color: #001970;
+    --main-color: #303f9f;
+    --light-color: #666ad1;
+} */
+
+/* Green theme*/
+:root {
+    --dark-color: #004c40;
+    --main-color: #00796b;
+    --light-color: #48a999;
+}
+
+/* Purple theme */
+/* :root {
+    --dark-color: #7b1fa2;
+    --main-color: #ae52d4;
+    --light-color: #d05ce3;
+} */
+
 html, body {
     margin: 0; height: 100%; overflow: hidden;
 }
@@ -11,8 +32,71 @@ html, body {
     /* border: solid black 10px; */
 }
 
+/* nav */
+nav {
+    background-color: var(--dark-color);
+    text-align: center;
+
+    display: -ms-flex; display: -webkit-flex; display: flex;
+}
+
+nav .box{
+    background-color: white;
+    /* border: solid red 1px; */
+
+    display: inline-block;
+    margin: 10px 1%;
+    padding: 2px 5px;
+    flex:1;
+}
+
+nav .box-title, nav .box-bigtitle {
+    background-color: var(--main-color);
+    color: white;
+    /* border: solid red 1px; */
+    font-weight: bold;
+    font-style: italic;
+}
+
+nav .box-bigtitle {
+    font-size: 2em;
+    padding: 9px 0px;
+}
+
+nav .box-title {
+    font-size: 1.4em;
+    padding: 1px 0px;
+}
+
+nav .box-items {
+    /* background-color: blue; */
+    /* border: solid red 1px; */
+    display: -ms-flex; display: -webkit-flex; display: flex;
+    height: 60px;
+    font-size: 1.3em;
+    padding: 3px;
+}
+
+nav button {
+    font-size: 1em;
+    background-color: var(--main-color);
+    color: white;
+    border: ridge var(--dark-color) 1px;
+    padding: 6px 7px;
+}
+
+nav .box-item {
+    /* background-color: orange; */
+    /* border: solid red 1px; */
+
+    display: inline-block;
+    flex:1;
+    margin: auto;
+}
+
+/* grid */
 #grid {
-    border: solid black 1px;
+    border: solid var(--light-color) 1px;
     padding: 0px;
     width: 100%;
     position: absolute;
@@ -24,24 +108,20 @@ html, body {
 }
 
 .alive {
-    background-color: black;
-    border: ridge gray 1px;
+    background-color: var(--dark-color);
+    border: ridge var(--main-color) 1px;
 }
 
 .dead {
     background-color: white;
-    border: ridge black 1px;
+    border: ridge var(--light-color) 1px;
 }
-
-/* .alive, .dead {
-} */
 
 .void {
     margin-top: 100%;
 }
 
 
-/* The switch - the box around the toggle */
 .switch {
     position: relative;
     display: inline-block;
@@ -49,57 +129,54 @@ html, body {
     height: 34px;
 }
 
-/* Hide default HTML checkbox */
-.switch input {
-opacity: 0;
-width: 0;
-height: 0;
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
 
-/* The toggle */
 .toggle {
-position: absolute;
-cursor: pointer;
-top: 0;
-left: 0;
-right: 0;
-bottom: 0;
-background-color: #ccc;
--webkit-transition: .4s;
-transition: .4s;
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
 }
 
 .toggle:before {
-position: absolute;
-content: "";
-height: 26px;
-width: 26px;
-left: 4px;
-bottom: 4px;
-background-color: white;
--webkit-transition: .4s;
-transition: .4s;
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
 }
 
 input:checked + .toggle {
-background-color: #2196F3;
+    background-color: var(--light-color);
 }
 
 input:focus + .toggle {
-box-shadow: 0 0 1px #2196F3;
+    box-shadow: 0 0 1px var(--light-color);
 }
 
 input:checked + .toggle:before {
--webkit-transform: translateX(26px);
--ms-transform: translateX(26px);
-transform: translateX(26px);
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
 }
 
-/* Rounded toggles */
 .toggle.round {
-border-radius: 34px;
+    border-radius: 34px;
 }
 
 .toggle.round:before {
-border-radius: 50%;
+    border-radius: 50%;
 }

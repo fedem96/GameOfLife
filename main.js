@@ -283,8 +283,9 @@ var app = new Vue({
             let runLength = 1;
             let r = 0; let c = 0;
             while (rle !== ""){
-                const regex = /[o,b,!,$]/;
-                let nextNonNumber = rle.search(regex);
+                const symbolRegex = /[o,b,!,$]/;
+                const numberRegex = /[0-9]+/;
+                let nextNonNumber = rle.search(symbolRegex);
                 let token;
                 if (nextNonNumber === 0){
                     token = rle[0];
@@ -293,6 +294,10 @@ var app = new Vue({
                     token = rle.substr(0, nextNonNumber);
                     rle = rle.substr(nextNonNumber);
                 }
+
+                if(token.search(symbolRegex) == -1 && token.search(numberRegex) == -1)
+                    continue;
+
                 switch(token){
                     case 'b':
                         console.assert(runLength > 0);
@@ -316,7 +321,7 @@ var app = new Vue({
                         runLength = 1;
                         break;
                     default:
-                        console.assert(token.match(/[0-9]+/));
+                        console.assert(token.match(numberRegex));
                         // token is an integer
                         runLength = parseInt(token);
                 }
@@ -437,6 +442,27 @@ var app = new Vue({
             this.board._updateVisibleGrid();
         },
 
+        setTheme(theme){
+            let root = document.documentElement;
+            switch(theme){
+                case "Blue":
+                    root.style.setProperty('--dark-color', "#001970");
+                    root.style.setProperty('--main-color', "#303f9f");
+                    root.style.setProperty('--light-color', "#666ad1");
+                    break;
+                case "Green":
+                    root.style.setProperty('--dark-color', "#004c40");
+                    root.style.setProperty('--main-color', "#00796b");
+                    root.style.setProperty('--light-color', "#48a999");
+                    break;
+                case "Purple":
+                    root.style.setProperty('--dark-color', "#7b1fa2");
+                    root.style.setProperty('--main-color', "#ae52d4");
+                    root.style.setProperty('--light-color', "#d05ce3");
+                    break;
+            }
+
+        }
         
     },
 });
@@ -510,7 +536,6 @@ class GridController{
         this.lastY = this.mouseY;
 
         let gridRect = this.grid.getBoundingClientRect();
-        console.log(gridRect);
         let cellWidth = document.querySelector(".dead").clientWidth;
 
         let topSpace = gridRect.top - document.getElementById("gridContainer").getBoundingClientRect().top;

@@ -12,24 +12,77 @@
         <div id="app">
 
             <header>
-                <h1>{{ header }}</h1>
+                <h1></h1>
             </header>
             <nav>
-                <div v-on:click=playPauseClick> {{labBtnPlayPause}} </div>
-                <div v-on:click=clearClick> Clear </div>
-                <input type="file" @change="loadFile($event)">
-                <div class="slidercontainer">
-                    <input type="range" min="1" max="60" class="slider" id="sliderFPS" v-model=fps>
-                    <label for="sliderFPS">{{fps}} FPS</label>
+                <div class="box">
+                    <div class="box-bigtitle">Conway's <br> Game of Life</div>
                 </div>
-                <div class="switch">
-                    <input id="toggleAutoFit" type="checkbox" v-model=board.autoFit v-on:change=board.autoFitChanged()>
-                    <span class="toggle round"></span>
+
+                <div class="box">
+                    <div class="box-title">Options</div>
+                    <div class="box-items">
+                        <div class="box-item slidercontainer">
+                            <input type="range" min="1" max="60" class="slider" id="sliderFPS" v-model=fps><br>
+                            <label for="sliderFPS">FPS: {{fps}}</label>
+                        </div>
+                        <div class="box-item">
+                            <label class="switch">
+                                <input type="checkbox"><!-- v-model=board.autoFit v-on:change=board.autoFitChanged()-->
+                                <span class="toggle round"></span>
+                            </label>
+                            <br>
+                            <label for="toggleAutoFit">Auto Fit</label>
+                        </div>
+                    </div>
+                    
                 </div>
-                <label for="toggleAutoFit">Auto Fit</label>
+
+                <div class="box">
+                    <div class="box-title">Commands</div>
+
+                    <div class="box-items">
+                        <div class="box-item"> <button v-on:click=playPauseClick>{{labBtnPlayPause}}</button> </div>
+                        <div class="box-item"> <button v-on:click=board.step()>Step</button> </div>
+                        <div class="box-item"> <button v-on:click=clearClick>Clear</button> </div>
+                    </div>
+                </div>
+
+                <div class="box">
+                    <div class="box-title">Load</div>
+                    <div class="box-items">
+                        <div class="box-item">
+                            <select class="select-css">
+                                <option>Predefined</option>
+                                <option>cross2</option>
+                                <option>scholar</option>
+                                <option>switchengine</option>
+                            </select>
+                        </div>
+                        <div class="box-item"> 
+                            <input type="file" @change="loadFile($event)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="box">
+                    <div class="box-title">Theme</div>
+                    <div class="box-items">
+                        <div class="box-item"> 
+                            <button v-on:click=setTheme("Blue")>Blue</button>
+                        </div>
+                        <div class="box-item"> 
+                            <button v-on:click=setTheme("Green")>Green</button>
+                        </div>
+                        <div class="box-item"> 
+                            <button v-on:click=setTheme("Purple")>Purple</button>
+                        </div>
+                    <div>
+                </div>
             </nav>
-            tx: {{ board.topLeftCornerX }}, ty: {{ board.topLeftCornerY }}, vw: {{ board.visibleWidth }}, vh: {{ board.visibleHeight }}
-            <div id="info"></div>
+
+            <!--tx: {{ board.topLeftCornerX }}, ty: {{ board.topLeftCornerY }}, vw: {{ board.visibleWidth }}, vh: {{ board.visibleHeight }}
+            <div id="info"></div-->
 
             <div id="gridContainer">
                 <table id="grid" onwheel="app.handleWheel(event)">
