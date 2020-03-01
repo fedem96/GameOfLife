@@ -23,12 +23,12 @@
                     <div class="box-title">Options</div>
                     <div class="box-items">
                         <div class="box-item slidercontainer">
-                            <input type="range" min="1" max="60" class="slider" id="sliderFPS" v-model=fps><br>
+                            <input type="range" min="1" max="60" class="slider" id="sliderFPS" v-model=fps style="cursor: w-resize;"><br>
                             <label for="sliderFPS">FPS: {{fps}}</label>
                         </div>
                         <div class="box-item">
                             <label class="switch">
-                                <input type="checkbox"><!-- v-model=board.autoFit v-on:change=board.autoFitChanged()-->
+                                <input type="checkbox" v-model=board.autoFit v-on:change=board.autoFitChanged()>
                                 <span class="toggle round"></span>
                             </label>
                             <br>
@@ -52,15 +52,16 @@
                     <div class="box-title">Load</div>
                     <div class="box-items">
                         <div class="box-item">
-                            <select class="select-css">
-                                <option>Predefined</option>
+                            <select id="selectLoad" @click=load()>
+                                <option>&lt;examples&gt;</option>
                                 <option>cross2</option>
                                 <option>scholar</option>
                                 <option>switchengine</option>
                             </select>
                         </div>
                         <div class="box-item"> 
-                            <input type="file" @change="loadFile($event)">
+                            <input type="file" id="inputFile" @change="loadFile($event)">
+                            <label for="inputFile">RLE</label>
                         </div>
                     </div>
                 </div>

@@ -21,6 +21,7 @@
 
 html, body {
     margin: 0; height: 100%; overflow: hidden;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 #gridContainer {
@@ -55,17 +56,18 @@ nav .box-title, nav .box-bigtitle {
     color: white;
     /* border: solid red 1px; */
     font-weight: bold;
-    font-style: italic;
 }
 
 nav .box-bigtitle {
     font-size: 2em;
     padding: 9px 0px;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 nav .box-title {
     font-size: 1.4em;
     padding: 1px 0px;
+    font-style: italic;
 }
 
 nav .box-items {
@@ -75,14 +77,7 @@ nav .box-items {
     height: 60px;
     font-size: 1.3em;
     padding: 3px;
-}
-
-nav button {
-    font-size: 1em;
-    background-color: var(--main-color);
-    color: white;
-    border: ridge var(--dark-color) 1px;
-    padding: 6px 7px;
+    color: var(--dark-color);
 }
 
 nav .box-item {
@@ -92,6 +87,37 @@ nav .box-item {
     display: inline-block;
     flex:1;
     margin: auto;
+}
+
+nav button, #inputFile + label, #selectLoad {
+    font-size: 1em;
+    background-color: var(--main-color);
+    color: white;
+    border: ridge var(--dark-color) 1px;
+    padding: 6px 7px;
+    font-family: 'Courier New', Courier, monospace;
+    width: 4.5em;
+    cursor: pointer;
+}
+
+#selectLoad {
+    width: 8.6em;
+    padding: 6px 0px;
+}
+
+nav button:hover,
+#inputFile + label:hover,
+#selectLoad:hover {
+    background-color: var(--light-color);
+}
+
+#inputFile {
+	width: 0.1px;
+	height: 0.1px;
+	opacity: 0;
+	overflow: hidden;
+	position: absolute;
+	z-index: -1;
 }
 
 /* grid */

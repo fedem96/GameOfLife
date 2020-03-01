@@ -221,7 +221,7 @@ var app = new Vue({
         header: "Conway's Game of Life",
         labBtnPlayPause: "Play",
         board: new Board(/*1024, 1024, */7, 7),
-        padding: 20,
+        /*padding: 20,*/
         fps: 30
     },
     created: function () {
@@ -328,7 +328,7 @@ var app = new Vue({
             }
             return [aliveCellsRC, height, width];
         },
-        pad: function(grid, padding){
+        /*pad: function(grid, padding){
             let paddingLeft, paddingRight, paddingTop, paddingBottom;
             if(padding.length == undefined){ // padding is a number
                 paddingLeft = padding; paddingRight = padding; paddingTop = padding; paddingBottom = padding;
@@ -362,7 +362,7 @@ var app = new Vue({
             }
 
             return grid;
-        },
+        },*/
         
         // _loadFile: function(){
         //     rows = this.readRLE_Path('114p6h1v0pushalong2.rle')
@@ -371,6 +371,15 @@ var app = new Vue({
         //     var file = new File([""], filePath, {type: "text/plain"});
         //     console.log(filePath);
         // },
+
+        load: function(){
+            let select = document.querySelector("#selectLoad");
+            if(select.selectedIndex == 0)
+                return;
+            let fileName = "rle/" + select.value + ".rle";
+            let file = new File(fileName);
+            console.log("ciao");
+        },
 
         playPauseClick: function(){
             if(this.status === "paused"){
