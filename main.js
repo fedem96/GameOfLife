@@ -11,6 +11,12 @@ class Cell {
         this.observers = [];
     }
 
+    click() {
+        if(!validClick)
+            return;
+        this.toggleStatus();
+    }
+
     toggleStatus() {
         if (this.status == "dead")
             this.status = "alive";
@@ -55,9 +61,39 @@ class Board{
         this.visibleGrid = [];
         this._updateVisibleGrid();
         this.fps = 30;
+        this.autoFit = false;
     }
 
     _updateVisibleGrid(){
+        if(this.autoFit){
+            let minC, maxC, minR, maxR;
+            let first = true;
+            for (let pair of this._aliveCellsRC) {
+                pair = JSON.parse(pair);
+                if(first){
+                    first = false;
+                    minR = pair[0];
+                    maxR = pair[0];
+                    minC = pair[1];
+                    maxC = pair[1];
+                }
+                if (pair[0] < minR) {
+                    minR = pair[0];
+                } else {
+                    maxR = pair[0];
+                }
+                if (pair[1] < minC) {
+                    minC = pair[1];
+                } else {
+                    maxC = pair[1];
+                }
+            }
+            this.topLeftCornerX = minC;
+            this.topLeftCornerY = minR;
+            this.visibleWidth = maxC - minC + 1;
+            this.visibleHeight = maxR - minR + 1;
+        }
+
         let tx = this.topLeftCornerX;
         let ty = this.topLeftCornerY;
         let vw = this.visibleWidth;
@@ -82,12 +118,13 @@ class Board{
     }
 
     update(cell){
+        let jsonPosition = JSON.stringify([cell.row, cell.column]);
         if(cell.status == "alive"){
-            if(!([cell.row, cell.column] in this._aliveCellsRC))
-                this._aliveCellsRC.add(JSON.stringify([cell.row, cell.column]));
+            if(!(this._aliveCellsRC.has(jsonPosition)))
+                this._aliveCellsRC.add(jsonPosition);
         } else {
-            if([cell.row, cell.column] in this._aliveCellsRC)
-                this._aliveCellsRC.delete(JSON.stringify([cell.row, cell.column]));
+            if(this._aliveCellsRC.has(jsonPosition))
+                this._aliveCellsRC.delete(jsonPosition);
         }
     }
 
@@ -157,6 +194,23 @@ class Board{
         this._updateVisibleGrid();
     }
 
+    move(deltaX, deltaY){
+        this.topLeftCornerX += deltaX;
+        this.topLeftCornerY += deltaY;
+        this._updateVisibleGrid();
+    }
+
+    changeDimension(deltaWidht, deltaHeight){
+        this.visibleWidth += deltaWidht;
+        this.visibleHeight += deltaHeight;
+        this._updateVisibleGrid();
+    }
+
+    autoFitChanged(){
+        if(this.autoFit)
+            this._updateVisibleGrid;
+    }
+
 }
 
 
@@ -172,6 +226,9 @@ var app = new Vue({
     },
     created: function () {
         
+    },
+    mounted: function () {
+        this.handleResize();
     },
     methods: {
 
@@ -339,6 +396,133 @@ var app = new Vue({
         clearClick: function(){
             this.stopPlaying();
             this.board.clear();
-        }
+        },
+
+        handleWheel: function(event){
+            var y = event.deltaY;
+            if (y > 0) {
+                // wheel down, less zoom
+                this.board.visibleWidth += 2;
+                this.board.visibleHeight += 2;
+                this.board.topLeftCornerX -= 1;
+                this.board.topLeftCornerY -= 1;
+            } else {
+                
+                if(this.board.visibleWidth <= 2 || this.board.visibleHeight <= 2)
+                    return;
+
+                // wheel up, more zoom
+                this.board.visibleHeight -= 2;
+                this.board.visibleWidth -= 2;
+                this.board.topLeftCornerX += 1;
+                this.board.topLeftCornerY += 1;
+
+                // this.board.visibleWidth = Math.max(this.board.visibleWidth, 1);
+                // this.board.visibleHeight = Math.max(this.board.visibleHeight, 1);
+            }
+            this.board._updateVisibleGrid();
+        },
+
+        handleResize: function(){
+            let h = window.innerHeight-document.querySelector("header").clientHeight-document.querySelector("nav").clientHeight;
+            this.board.visibleHeight = Math.ceil(h / document.querySelector(".dead").clientHeight);
+            this.board._updateVisibleGrid();
+        },
+
+        
     },
 });
+
+class GridController{
+    constructor(grid) {
+        this.grid = grid;
+        let _this=this;
+        this.grid.onmousedown = (e => _this.dragMouseDown(e));
+    }
+    
+    elementDrag(e){
+        e = e || window.event;
+        e.preventDefault();
+        // calculate the new cursor position:
+        this.deltaMouseX = this.mouseX - e.clientX;
+        this.deltaMouseY = this.mouseY - e.clientY;
+        this.mouseX = e.clientX;
+        this.mouseY = e.clientY;
+        // set the element's new position:
+        this.grid.style.top = (this.grid.offsetTop - this.deltaMouseY) + "px";
+        this.grid.style.left = (this.grid.offsetLeft - this.deltaMouseX) + "px";
+    }
+
+    closeDragElement() {
+        // stop moving when mouse button is released
+        document.onmouseup = null;
+        document.onmousemove = null;
+
+        // enable/disable click on cells
+        let eps = 0;
+        if(Math.abs(this.mouseX-this.firstMouseX) <= eps && Math.abs(this.mouseY-this.firstMouseY) <= eps){
+            // little movement -> mouse click
+            validClick = true;
+            console.log("valid")
+        }
+        else{
+            // big movement -> no mouse clik
+            validClick = false;
+            console.log("NOT valid");
+            this.recalculateVisibleCells();
+        }
+    }
+
+    dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+
+        // get the mouse cursor position at startup:
+        this.mouseX = e.clientX;
+        this.mouseY = e.clientY;
+        this.firstMouseX = this.mouseX;
+        this.firstMouseY = this.mouseY;
+
+        // bind move and release events
+        let _this=this;
+        document.onmouseup = (_ => _this.closeDragElement()); // when mouse is released
+        document.onmousemove = (e => _this.elementDrag(e)); // whenever the mouse moves
+    }
+
+    recalculateVisibleCells(){
+        let gridRect = this.grid.getBoundingClientRect();
+        let cellWidth = document.querySelector(".dead").clientWidth;
+
+        let topSpace = gridRect.top - document.getElementById("gridContainer").getBoundingClientRect().top;
+        let leftSpace = gridRect.left - document.getElementById("gridContainer").getBoundingClientRect().left;
+        let bottomSpace = window.innerHeight - gridRect.bottom;
+        let rightSpace = document.getElementById("body").getBoundingClientRect().right - gridRect.right;
+
+        if(topSpace > 0){
+            let numFillingCells = Math.ceil(topSpace / cellWidth);
+            app.board.move(0, -numFillingCells);
+            this.grid.style.top = (parseInt(this.grid.style.top.replace("px", "")) - (numFillingCells * cellWidth)) + "px";
+        }
+
+        if(leftSpace > 0){
+            let numFillingCells = Math.ceil(leftSpace / cellWidth);
+            app.board.move(-numFillingCells, 0);
+            this.grid.style.left = (parseInt(this.grid.style.left.replace("px", "")) - (numFillingCells * cellWidth)) + "px";
+        }
+
+        if(bottomSpace > 0){
+            let numFillingCells = Math.ceil(bottomSpace / cellWidth);
+            app.board.move(0, numFillingCells);
+            this.grid.style.top = (parseInt(this.grid.style.top.replace("px", "")) + (numFillingCells * cellWidth)) + "px";
+        }
+
+        if(rightSpace > 0){
+            let numFillingCells = Math.ceil(rightSpace / cellWidth);
+            app.board.move(numFillingCells, 0);
+            this.grid.style.left = (parseInt(this.grid.style.left.replace("px", "")) + (numFillingCells * cellWidth)) + "px";
+        }
+    }
+}
+
+var gc = new GridController(document.getElementById("grid"));
+var validClick = false;

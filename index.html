@@ -8,22 +8,36 @@
         <link rel="stylesheet" type="text/css" href="style.css"/>
     </head>
 
-    <body>
+    <body id="body" onresize="app.handleResize()">
         <div id="app">
-            <h1>{{ header }}</h1>
-            <button v-on:click=playPauseClick> {{labBtnPlayPause}} </button>
-            <button v-on:click=clearClick> Clear </button>
-            <input type="file" @change="loadFile($event)">
-            <div class="slidercontainer">
-                <input type="range" min="1" max="120" class="slider" id="sliderFPS" v-model=fps>
-                <label for="sliderFPS">{{fps}} FPS</label>
-                
+
+            <header>
+                <h1>{{ header }}</h1>
+            </header>
+            <nav>
+                <div v-on:click=playPauseClick> {{labBtnPlayPause}} </div>
+                <div v-on:click=clearClick> Clear </div>
+                <input type="file" @change="loadFile($event)">
+                <div class="slidercontainer">
+                    <input type="range" min="1" max="120" class="slider" id="sliderFPS" v-model=fps>
+                    <label for="sliderFPS">{{fps}} FPS</label>
+                </div>
+                <div class="switch">
+                    <input id="toggleAutoFit" type="checkbox" v-bind=board.autoFit v-on:click=board.autoFitChanged()>
+                    <span class="toggle round"></span>
+                </div>
+                <label for="toggleAutoFit">Auto Fit</label>
+            </nav>
+            tx: {{ board.topLeftCornerX }}, ty: {{ board.topLeftCornerY }}, vw: {{ board.visibleWidth }}, vh: {{ board.visibleHeight }}
+            <div id="info"></div>
+
+            <div id="gridContainer">
+                <table id="grid" onwheel="app.handleWheel(event)">
+                    <tr v-for="row in board.visibleGrid">
+                        <th v-for="cell in row" v-bind:class=cell.status v-on:click=cell.click()><div class="void"></div></th>
+                    </tr>
+                </table>
             </div>
-            <table class="grid">
-                <tr v-for="row in board.visibleGrid">
-                    <th v-for="cell in row" v-bind:class=cell.status v-on:click=cell.toggleStatus()></th>
-                </tr>
-            </table>
         </div>
     </body>
 
