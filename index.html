@@ -19,11 +19,11 @@
                 <div v-on:click=clearClick> Clear </div>
                 <input type="file" @change="loadFile($event)">
                 <div class="slidercontainer">
-                    <input type="range" min="1" max="120" class="slider" id="sliderFPS" v-model=fps>
+                    <input type="range" min="1" max="60" class="slider" id="sliderFPS" v-model=fps>
                     <label for="sliderFPS">{{fps}} FPS</label>
                 </div>
                 <div class="switch">
-                    <input id="toggleAutoFit" type="checkbox" v-bind=board.autoFit v-on:click=board.autoFitChanged()>
+                    <input id="toggleAutoFit" type="checkbox" v-model=board.autoFit v-on:change=board.autoFitChanged()>
                     <span class="toggle round"></span>
                 </div>
                 <label for="toggleAutoFit">Auto Fit</label>

@@ -48,12 +48,12 @@ class Cell {
 
 
 class Board{
-    constructor(maxWidth, maxHeight, visibleWidth, visibleHeight){
-        this.maxWidth = maxWidth;
-        this.maxHeight = maxHeight;
+    constructor(/*maxWidth, maxHeight, */visibleWidth, visibleHeight){
+        // this.maxWidth = maxWidth;
+        // this.maxHeight = maxHeight;
 
-        this.topLeftCornerX = maxWidth/2;
-        this.topLeftCornerY = maxHeight/2;
+        this.topLeftCornerX = 0;
+        this.topLeftCornerY = 0;
         this.visibleHeight = visibleHeight;
         this.visibleWidth = visibleWidth;
 
@@ -171,8 +171,8 @@ class Board{
                     continue;
                 let r = pair[0]+i;
                 let c = pair[1]+j;
-                if(r >= 0 && r < this.maxHeight && c >= 0 && c < this.maxWidth)
-                    neighbors.push(JSON.stringify([r, c]));
+                // if(r >= 0 && r < this.maxHeight && c >= 0 && c < this.maxWidth)
+                neighbors.push(JSON.stringify([r, c]));
             }
         }
 
@@ -208,7 +208,7 @@ class Board{
 
     autoFitChanged(){
         if(this.autoFit)
-            this._updateVisibleGrid;
+            this._updateVisibleGrid();
     }
 
 }
@@ -220,7 +220,7 @@ var app = new Vue({
         status: "paused", // paused | playing
         header: "Conway's Game of Life",
         labBtnPlayPause: "Play",
-        board: new Board(1024, 1024, 7, 7),
+        board: new Board(/*1024, 1024, */7, 7),
         padding: 20,
         fps: 30
     },
@@ -234,15 +234,26 @@ var app = new Vue({
 
 
         loadFile: function(event){
-            console.log(event.target);
             let file = event.target.files[0];
             let _this = this;
             let onload = function(fileContent) {
                 let aliveCellsRC, maxR, maxC;
                 [aliveCellsRC, maxR, maxC] = _this.decodeRLE(fileContent); 
+                let cellWidth = window.innerWidth / maxC;
+                let h = window.innerHeight-document.querySelector("header").clientHeight-document.querySelector("nav").clientHeight;
+                let cellHeight = h / maxR;
+                if(cellWidth > cellHeight)
+                    maxC = Math.ceil(window.innerWidth / cellHeight);
+                else if(cellHeight > cellWidth)
+                    maxR = Math.ceil(h / cellWidth);
+
                 _this.board.setContent(aliveCellsRC);
                 _this.board.setTopCorner(0, 0);
                 _this.board.setDimension(maxR, maxC);
+
+                document.getElementById("grid").style.top = "0px";
+                document.getElementById("grid").style.left = "0px";
+
                 // _this.rows = _this.pad(decodedContent.map(r => r.map(num => new Cell(num))), _this.padding);
             };
             this.readFileAsync(file, onload);
@@ -357,8 +368,6 @@ var app = new Vue({
         // },
 
         playPauseClick: function(){
-            console.log("pp pressed");
-            console.log(this.status);
             if(this.status === "paused"){
                 this.startPlaying();
             }
@@ -368,7 +377,6 @@ var app = new Vue({
         },
 
         startPlaying: function(){
-            console.log("begin playing");
             this.status = "playing";
             this.labBtnPlayPause = "Pause";
             this.gameStep();
@@ -438,6 +446,8 @@ class GridController{
         this.grid = grid;
         let _this=this;
         this.grid.onmousedown = (e => _this.dragMouseDown(e));
+        this.lastX = 0;
+        this.lastY = 0;
     }
     
     elementDrag(e){
@@ -451,6 +461,10 @@ class GridController{
         // set the element's new position:
         this.grid.style.top = (this.grid.offsetTop - this.deltaMouseY) + "px";
         this.grid.style.left = (this.grid.offsetLeft - this.deltaMouseX) + "px";
+
+        let eps = 80;
+        if(Math.abs(this.mouseX - this.lastX) > eps || Math.abs(this.mouseY - this.lastY) > eps)
+            this.recalculateVisibleCells();
     }
 
     closeDragElement() {
@@ -463,12 +477,10 @@ class GridController{
         if(Math.abs(this.mouseX-this.firstMouseX) <= eps && Math.abs(this.mouseY-this.firstMouseY) <= eps){
             // little movement -> mouse click
             validClick = true;
-            console.log("valid")
         }
         else{
             // big movement -> no mouse clik
             validClick = false;
-            console.log("NOT valid");
             this.recalculateVisibleCells();
         }
     }
@@ -483,6 +495,9 @@ class GridController{
         this.firstMouseX = this.mouseX;
         this.firstMouseY = this.mouseY;
 
+        this.lastX = this.mouseX;
+        this.lastY = this.mouseY;
+
         // bind move and release events
         let _this=this;
         document.onmouseup = (_ => _this.closeDragElement()); // when mouse is released
@@ -490,13 +505,18 @@ class GridController{
     }
 
     recalculateVisibleCells(){
+
+        this.lastX = this.mouseX;
+        this.lastY = this.mouseY;
+
         let gridRect = this.grid.getBoundingClientRect();
+        console.log(gridRect);
         let cellWidth = document.querySelector(".dead").clientWidth;
 
         let topSpace = gridRect.top - document.getElementById("gridContainer").getBoundingClientRect().top;
         let leftSpace = gridRect.left - document.getElementById("gridContainer").getBoundingClientRect().left;
         let bottomSpace = window.innerHeight - gridRect.bottom;
-        let rightSpace = document.getElementById("body").getBoundingClientRect().right - gridRect.right;
+        let rightSpace = window.innerWidth - gridRect.right;
 
         if(topSpace > 0){
             let numFillingCells = Math.ceil(topSpace / cellWidth);
