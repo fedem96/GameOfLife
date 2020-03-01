@@ -237,23 +237,7 @@ var app = new Vue({
             let file = event.target.files[0];
             let _this = this;
             let onload = function(fileContent) {
-                let aliveCellsRC, maxR, maxC;
-                [aliveCellsRC, maxR, maxC] = _this.decodeRLE(fileContent); 
-                let cellWidth = window.innerWidth / maxC;
-                let h = window.innerHeight-document.querySelector("header").clientHeight-document.querySelector("nav").clientHeight;
-                let cellHeight = h / maxR;
-                if(cellWidth > cellHeight)
-                    maxC = Math.ceil(window.innerWidth / cellHeight);
-                else if(cellHeight > cellWidth)
-                    maxR = Math.ceil(h / cellWidth);
-
-                _this.board.setContent(aliveCellsRC);
-                _this.board.setTopCorner(0, 0);
-                _this.board.setDimension(maxR, maxC);
-
-                document.getElementById("grid").style.top = "0px";
-                document.getElementById("grid").style.left = "0px";
-
+                _this.updateGUIfromRLE(fileContent);
                 // _this.rows = _this.pad(decodedContent.map(r => r.map(num => new Cell(num))), _this.padding);
             };
             this.readFileAsync(file, onload);
@@ -328,6 +312,24 @@ var app = new Vue({
             }
             return [aliveCellsRC, height, width];
         },
+        updateGUIfromRLE(encodedTxt){
+            let aliveCellsRC, maxR, maxC;
+            [aliveCellsRC, maxR, maxC] = this.decodeRLE(encodedTxt); 
+            let cellWidth = window.innerWidth / maxC;
+            let h = window.innerHeight-document.querySelector("header").clientHeight-document.querySelector("nav").clientHeight;
+            let cellHeight = h / maxR;
+            if(cellWidth > cellHeight)
+                maxC = Math.ceil(window.innerWidth / cellHeight);
+            else if(cellHeight > cellWidth)
+                maxR = Math.ceil(h / cellWidth);
+
+            this.board.setContent(aliveCellsRC);
+            this.board.setTopCorner(0, 0);
+            this.board.setDimension(maxR, maxC);
+
+            document.getElementById("grid").style.top = "0px";
+            document.getElementById("grid").style.left = "0px";
+        },
         /*pad: function(grid, padding){
             let paddingLeft, paddingRight, paddingTop, paddingBottom;
             if(padding.length == undefined){ // padding is a number
@@ -363,14 +365,6 @@ var app = new Vue({
 
             return grid;
         },*/
-        
-        // _loadFile: function(){
-        //     rows = this.readRLE_Path('114p6h1v0pushalong2.rle')
-        // },
-        // readRLE_Path: function(filePath){
-        //     var file = new File([""], filePath, {type: "text/plain"});
-        //     console.log(filePath);
-        // },
 
         load: function(){
             let select = document.querySelector("#selectLoad");
@@ -378,17 +372,16 @@ var app = new Vue({
                 return;
             let fileName = "rle/" + select.value + ".rle";
             
+            let _this = this;
             let request = new XMLHttpRequest();
-
-            request.open("GET", fileName, false);
+            request.open("GET", fileName, true);
             request.onreadystatechange = function ()
             {
                 if(request.readyState === 4)
                 {
                     if(request.status === 200 || request.status == 0)
                     {
-                        var allText = request.responseText;
-                        console.log(allText);
+                        _this.updateGUIfromRLE(request.responseText);
                     }
                 }
             }
