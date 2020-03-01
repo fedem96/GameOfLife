@@ -11,12 +11,9 @@
     <body id="body" onresize="app.handleResize()">
         <div id="app">
 
-            <header>
-                <h1></h1>
-            </header>
             <nav>
                 <div class="box">
-                    <div class="box-bigtitle">Conway's <br> Game of Life</div>
+                    <div class="box-bigtitle">Conway's<br>Game of Life</div>
                 </div>
 
                 <div class="box">
@@ -28,7 +25,7 @@
                         </div>
                         <div class="box-item">
                             <label class="switch">
-                                <input type="checkbox" v-model=board.autoFit v-on:change=board.autoFitChanged()>
+                                <input type="checkbox" v-model=board.autoFit v-on:change=autoFitChanged()>
                                 <span class="toggle round"></span>
                             </label>
                             <br>
@@ -42,9 +39,9 @@
                     <div class="box-title">Commands</div>
 
                     <div class="box-items">
-                        <div class="box-item"> <button v-on:click=playPauseClick>{{labBtnPlayPause}}</button> </div>
-                        <div class="box-item"> <button v-on:click=board.step()>Step</button> </div>
-                        <div class="box-item"> <button v-on:click=clearClick>Clear</button> </div>
+                        <div class="box-item"> <button v-on:click=playPauseClick()>{{labBtnPlayPause}}</button> </div>
+                        <div class="box-item"> <button v-on:click=gameStep(false)>Step</button> </div>
+                        <div class="box-item"> <button v-on:click=clearClick()>Clear</button> </div>
                     </div>
                 </div>
 
@@ -88,7 +85,7 @@
             <div id="gridContainer">
                 <table id="grid" onwheel="app.handleWheel(event)">
                     <tr v-for="row in board.visibleGrid">
-                        <th v-for="cell in row" v-bind:class=cell.status v-on:click=cell.click()><div class="void"></div></th>
+                        <th v-for="cell in row" v-bind:class=cell.status v-on:click=cellClick(cell)><div class="void"></div></th>
                     </tr>
                 </table>
             </div>
@@ -96,6 +93,7 @@
     </body>
 
     <script src="vue-debug.js"></script>
-    <script src="main.js" ></script>
+    <script src="model.js"></script>
+    <script src="controller.js"></script>
 
 </html>

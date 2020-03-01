@@ -1,0 +1,337 @@
+
+class PanController{
+    constructor(app, grid) {
+        this.app = app;
+        this.grid = grid;
+        let _this=this;
+        this.grid.onmousedown = (e => _this.dragMouseDown(e));
+        this.lastX = 0;
+        this.lastY = 0;
+    }
+    
+    elementDrag(e){
+        e = e || window.event;
+        e.preventDefault();
+        // calculate the new cursor position:
+        this.deltaMouseX = this.mouseX - e.clientX;
+        this.deltaMouseY = this.mouseY - e.clientY;
+        this.mouseX = e.clientX;
+        this.mouseY = e.clientY;
+        // set the element's new position:
+        this.grid.style.top = (this.grid.offsetTop - this.deltaMouseY) + "px";
+        this.grid.style.left = (this.grid.offsetLeft - this.deltaMouseX) + "px";
+
+        let eps = 80;
+        if(Math.abs(this.mouseX - this.lastX) > eps || Math.abs(this.mouseY - this.lastY) > eps)
+            this.recalculateVisibleCells();
+    }
+
+    closeDragElement() {
+        // stop moving when mouse button is released
+        document.onmouseup = null;
+        document.onmousemove = null;
+
+        // enable/disable click on cells
+        let eps = 0;
+        if(Math.abs(this.mouseX-this.firstMouseX) <= eps && Math.abs(this.mouseY-this.firstMouseY) <= eps){
+            // little movement -> mouse click
+            this.app.isClickValid = true;
+        }
+        else{
+            // big movement -> no mouse clik
+            this.app.isClickValid = false;
+            this.recalculateVisibleCells();
+        }
+    }
+
+    dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+
+        // get the mouse cursor position at startup:
+        this.mouseX = e.clientX;
+        this.mouseY = e.clientY;
+        this.firstMouseX = this.mouseX;
+        this.firstMouseY = this.mouseY;
+
+        this.lastX = this.mouseX;
+        this.lastY = this.mouseY;
+
+        // bind move and release events
+        let _this=this;
+        document.onmouseup = (_ => _this.closeDragElement()); // when mouse is released
+        document.onmousemove = (e => _this.elementDrag(e)); // whenever the mouse moves
+    }
+
+    recalculateVisibleCells(){
+
+        this.lastX = this.mouseX;
+        this.lastY = this.mouseY;
+
+        let gridRect = this.grid.getBoundingClientRect();
+        let cellWidth = document.querySelector(".dead").clientWidth;
+
+        let topSpace = gridRect.top - document.getElementById("gridContainer").getBoundingClientRect().top;
+        let leftSpace = gridRect.left - document.getElementById("gridContainer").getBoundingClientRect().left;
+        let bottomSpace = window.innerHeight - gridRect.bottom;
+        let rightSpace = window.innerWidth - gridRect.right;
+
+        if(topSpace > 0){
+            let numFillingCells = Math.ceil(topSpace / cellWidth);
+            this.app.board.move(0, -numFillingCells);
+            this.grid.style.top = (parseInt(this.grid.style.top.replace("px", "")) - (numFillingCells * cellWidth)) + "px";
+        }
+
+        if(leftSpace > 0){
+            let numFillingCells = Math.ceil(leftSpace / cellWidth);
+            this.app.board.move(-numFillingCells, 0);
+            this.grid.style.left = (parseInt(this.grid.style.left.replace("px", "")) - (numFillingCells * cellWidth)) + "px";
+        }
+
+        if(bottomSpace > 0){
+            let numFillingCells = Math.ceil(bottomSpace / cellWidth);
+            this.app.board.move(0, numFillingCells);
+            this.grid.style.top = (parseInt(this.grid.style.top.replace("px", "")) + (numFillingCells * cellWidth)) + "px";
+        }
+
+        if(rightSpace > 0){
+            let numFillingCells = Math.ceil(rightSpace / cellWidth);
+            this.app.board.move(numFillingCells, 0);
+            this.grid.style.left = (parseInt(this.grid.style.left.replace("px", "")) + (numFillingCells * cellWidth)) + "px";
+        }
+    }
+}
+
+var app = new Vue({
+    el: '#app',
+    data: {
+        status: "paused", // paused | playing
+        labBtnPlayPause: "Play",
+        board: new Board(28, 28),
+        fps: 30,
+        isClickValid: true
+    },
+    created: function () {
+    },
+    mounted: function () {
+        this.handleResize();
+        this.pc = new PanController(this, document.getElementById("grid"));
+    },
+    methods: {
+
+
+        loadFile: function(event){
+            let file = event.target.files[0];
+            let _this = this;
+            let onload = function(fileContent) {
+                _this.updateGUIfromRLE(fileContent);
+            };
+            this.readFileAsync(file, onload);
+        },
+
+        readFileAsync: function(file, onloadFunction){
+            let reader = new FileReader();
+            reader.onload = function(event) {
+                // console.log(event.target.result);
+                onloadFunction(reader.result);
+            };
+            reader.readAsText(file);
+        },
+
+        decodeRLE: function(encodedTxt){
+            let lines = encodedTxt.split("\n");
+
+            l = -1;
+            do{
+                line = lines[++l];
+            }while(line.trim()[0] === "#");
+            line = lines[l++];
+            let [x, y, rule] = line.split(",").map(token => token.split("=")[1].trim());
+            let width = parseInt(x);
+            let height = parseInt(y);
+            
+            let rle = lines.slice(l).join("").trim();
+            let aliveCellsRC = new Set();
+            let runLength = 1;
+            let r = 0; let c = 0;
+            while (rle !== ""){
+                const symbolRegex = /[o,b,!,$]/;
+                const numberRegex = /[0-9]+/;
+                let nextNonNumber = rle.search(symbolRegex);
+                let token;
+                if (nextNonNumber === 0){
+                    token = rle[0];
+                    rle = rle.substr(1);
+                } else {
+                    token = rle.substr(0, nextNonNumber);
+                    rle = rle.substr(nextNonNumber);
+                }
+
+                if(token.search(symbolRegex) == -1 && token.search(numberRegex) == -1)
+                    continue;
+
+                switch(token){
+                    case 'b':
+                        console.assert(runLength > 0);
+                        for (let i=0; i<runLength; i++)
+                            c++;
+                        runLength = 1;
+                        break;
+                    case 'o':
+                        console.assert(runLength > 0);
+                        for (let i=0; i<runLength; i++)
+                            aliveCellsRC.add(JSON.stringify([r, c++]));
+                        runLength = 1;
+                        break;
+                    case '!':
+                        console.assert(rle === "");
+                    case '$':
+                        console.assert(c <= width);
+                        c = 0;
+                        for(let i=0; i<runLength; i++)
+                            r++;
+                        runLength = 1;
+                        break;
+                    default:
+                        console.assert(token.match(numberRegex));
+                        // token is an integer
+                        runLength = parseInt(token);
+                }
+            }
+            return [aliveCellsRC, height, width];
+        },
+
+        updateGUIfromRLE(encodedTxt){
+            let aliveCellsRC, maxR, maxC;
+            [aliveCellsRC, maxR, maxC] = this.decodeRLE(encodedTxt); 
+            let cellWidth = window.innerWidth / maxC;
+            let h = window.innerHeight-document.querySelector("nav").clientHeight;
+            let cellHeight = h / maxR;
+            if(cellWidth > cellHeight)
+                maxC = Math.ceil(window.innerWidth / cellHeight);
+            else if(cellHeight > cellWidth)
+                maxR = Math.ceil(h / cellWidth);
+
+            this.board.setContent(aliveCellsRC);
+            this.board.setTopCorner(0, 0);
+            this.board.setDimension(maxR, maxC);
+
+            document.getElementById("grid").style.top = "0px";
+            document.getElementById("grid").style.left = "0px";
+        },
+
+        load: function(){
+            let select = document.querySelector("#selectLoad");
+            if(select.selectedIndex == 0)
+                return;
+            let fileName = "rle/" + select.value + ".rle";
+            
+            let _this = this;
+            let request = new XMLHttpRequest();
+            request.open("GET", fileName, true);
+            request.onreadystatechange = function ()
+            {
+                if(request.readyState === 4)
+                {
+                    if(request.status === 200 || request.status == 0)
+                    {
+                        _this.updateGUIfromRLE(request.responseText);
+                    }
+                }
+            }
+            request.send(null);
+        },
+
+        playPauseClick: function(){
+            if(this.status === "paused"){
+                this.startPlaying();
+            }
+            else if(this.status === "playing"){
+                this.stopPlaying();
+            }
+        },
+
+        startPlaying: function(){
+            this.status = "playing";
+            this.labBtnPlayPause = "Pause";
+            this.gameStep();
+        },
+
+        gameStep: function(repeat=true){
+            let start = performance.now();
+            this.board.step();
+            let waitingTime = Math.floor(1000/this.fps);
+            // console.log(waitingTime)
+            let elapsed = performance.now() - start;
+            waitingTime = Math.max(0, waitingTime-elapsed);
+            if(repeat && this.status == "playing")
+                setTimeout(this.gameStep, waitingTime);
+        },
+
+        stopPlaying: function(){
+            this.status = "paused";
+            this.labBtnPlayPause = "Play";
+        },
+
+        cellClick: function(cell){
+            if(this.isClickValid)
+                cell.toggleStatus();
+        },
+
+        clearClick: function(){
+            this.stopPlaying();
+            this.board.clear();
+        },
+
+        autoFitChanged(){
+            if(this.board.autoFit)
+                this.board.updateVisibleGrid();
+        },
+
+        handleWheel: function(event){
+            var y = event.deltaY;
+            if(y == 0)
+                return;
+            let factor = 2 * Math.min(4, Math.max(1, Math.round(this.board.visibleWidth / 40)));
+            if (y <= 0) {
+                // wheel up, more zoom
+                if(this.board.visibleWidth <= 6)
+                    return;
+                factor *= -1;
+            }
+            this.board.visibleWidth += factor;
+            this.board.topLeftCornerX -= factor/2;
+            this.board.topLeftCornerY -= factor/2;
+            this.handleResize();
+            this.board.updateVisibleGrid();
+        },
+
+        handleResize: function(){
+            let h = window.innerHeight-document.querySelector("nav").clientHeight;
+            this.board.visibleHeight = Math.ceil(h / document.querySelector(".dead").clientHeight);
+            this.board.updateVisibleGrid();
+        },
+
+        setTheme(theme){
+            let root = document.documentElement;
+            switch(theme){
+                case "Blue":
+                    root.style.setProperty('--dark-color', "#001970");
+                    root.style.setProperty('--main-color', "#303f9f");
+                    root.style.setProperty('--light-color', "#666ad1");
+                    break;
+                case "Green":
+                    root.style.setProperty('--dark-color', "#004c40");
+                    root.style.setProperty('--main-color', "#00796b");
+                    root.style.setProperty('--light-color', "#48a999");
+                    break;
+                case "Purple":
+                    root.style.setProperty('--dark-color', "#7b1fa2");
+                    root.style.setProperty('--main-color', "#ae52d4");
+                    root.style.setProperty('--light-color', "#d05ce3");
+                    break;
+            }
+        }
+        
+    },
+});
