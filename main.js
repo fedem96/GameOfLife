@@ -377,8 +377,24 @@ var app = new Vue({
             if(select.selectedIndex == 0)
                 return;
             let fileName = "rle/" + select.value + ".rle";
-            let file = new File(fileName);
-            console.log("ciao");
+            
+            let request = new XMLHttpRequest();
+
+            request.open("GET", fileName, false);
+            request.onreadystatechange = function ()
+            {
+                if(request.readyState === 4)
+                {
+                    if(request.status === 200 || request.status == 0)
+                    {
+                        var allText = request.responseText;
+                        console.log(allText);
+                    }
+                }
+            }
+            request.send(null);
+
+
         },
 
         playPauseClick: function(){
