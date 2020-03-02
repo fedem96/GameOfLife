@@ -29,4 +29,5 @@ This repository is a web implementation of the *Game of Life* made in HTML, CSS,
 
 ## Try it!
 This implementation is available at: https://fedem96.github.io/GameOfLife
+
 You can find RLE-encoded configurations at: https://www.conwaylife.com/wiki/Main_Page
