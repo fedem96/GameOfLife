@@ -8,6 +8,7 @@ The game state is an infinite binary board: the game evolution is determined by 
 
 ## Rules
 Every cell in the board can be alive or dead. At each time step, the new board is computed from the previous one depending on the following rules:
+
 ![Rules of Game of Life](img/rules.png "Rules")
 
 
@@ -18,8 +19,8 @@ This repository is a web implementation of the *Game of Life* made in HTML, CSS,
 ![Graphical User Interface of this implementation of Game of Life](img/gui.png "Graphical User Interface")
 
 ## Features
-* **infinite editable board**: click to change cell status
-* **interactive controls**: start/pause the simulation, single-step, clear the board
+* **infinite editable board**: click on cells to change their state
+* **interactive controls**: start/pause the simulation, do a single step, clear the board
 * **variable framerate**: choose the animation framerate
 * load initial state from **examples list**
 * load initial state from configurations encoded in **Run Length Encoding** (RLE)
