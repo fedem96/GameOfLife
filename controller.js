@@ -328,9 +328,22 @@ var app = new Vue({
                 maxC = 0;
             }
 
-            this.board.setTopCorner(minC-2, minR-2);
+            let tcX = minC-2, tcY = minR-2;
+
+            if(1 <= tcX - this.board.topLeftCornerX && tcX - this.board.topLeftCornerX <=3)
+                tcX = this.board.topLeftCornerX;
+            if(1 <= tcY - this.board.topLeftCornerY && tcY - this.board.topLeftCornerY <=3)
+                tcY = this.board.topLeftCornerY;
+
+            this.board.setTopCorner(tcX, tcY);
             let width, height;
-            [width, height] = this.correctSize(maxC - minC + 5, maxR - minR + 5)
+            [width, height] = this.correctSize(maxC - minC + 5, maxR - minR + 5);
+
+            if(1 <= this.board.visibleWidth - width && this.board.visibleWidth - width <=6)
+                width = this.board.visibleWidth;
+            if(1 <= this.board.visibleHeight - height && this.board.visibleHeight - height <=6)
+                height = this.board.visibleHeight;
+
             this.board.setDimension(width, height);
         },
 
