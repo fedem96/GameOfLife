@@ -1,4 +1,4 @@
-class Cell {
+class Cell { // single cell in the board
     constructor(status, row, column){
         if(status === 0)
             status = "dead";
@@ -12,6 +12,7 @@ class Cell {
     }
 
     toggleStatus() {
+        // change cell status
         if (this.status == "dead")
             this.status = "alive";
         else
@@ -41,7 +42,7 @@ class Cell {
 }
 
 
-class Board{
+class Board{ // infinite Game of Life board
 
     constructor(visibleWidth, visibleHeight){
         this.topLeftCornerX = 0;
@@ -49,13 +50,13 @@ class Board{
         this.visibleHeight = visibleHeight;
         this.visibleWidth = visibleWidth;
 
-        this.aliveCellsRC = new Set();
-        this.visibleGrid = [];
+        this.aliveCellsRC = new Set(); // track alive cells only
+        this.visibleGrid = [];         // visible grid (obtained from aliveCellsRC, used by vue.js to generate HTML)
         this.updateVisibleGrid();
     }
 
     updateVisibleGrid(){
-
+        // update visible grid from content of aliveCellsRC
         let tx = this.topLeftCornerX;
         let ty = this.topLeftCornerY;
         let vw = this.visibleWidth;
@@ -80,6 +81,7 @@ class Board{
     }
 
     update(cell){
+        // get cell status changed notification
         let jsonPosition = JSON.stringify([cell.row, cell.column]);
         if(cell.status == "alive"){
             if(!(this.aliveCellsRC.has(jsonPosition)))
@@ -91,6 +93,8 @@ class Board{
     }
 
     step(){
+        // do Game of Life step
+
         // calculate number of neighbors
         let numNeighbors = {};
         for (const pair of this.aliveCellsRC) {
@@ -116,20 +120,22 @@ class Board{
     }
 
     clear(){
+        // kill all alive cells
         this.aliveCellsRC = new Set();
         this.updateVisibleGrid();
     }
 
-    _getNeighbors(pair){
-        pair = JSON.parse(pair);
+    _getNeighbors(cellPosition){
+        // get cell neighbors
+        cellPosition = JSON.parse(cellPosition);
         let neighbors = [];
 
         for (let i = -1; i <= 1; i++){
             for (let j = -1; j <= 1; j++){
                 if(i == 0 && i == j)
                     continue;
-                let r = pair[0]+i;
-                let c = pair[1]+j;
+                let r = cellPosition[0]+i;
+                let c = cellPosition[1]+j;
                 neighbors.push(JSON.stringify([r, c]));
             }
         }

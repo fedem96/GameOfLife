@@ -1,5 +1,5 @@
+class PanController{ // handles panning of board
 
-class PanController{
     constructor(app, grid) {
         this.app = app;
         this.grid = grid;
@@ -10,6 +10,7 @@ class PanController{
     }
     
     elementDrag(e){
+        // init drag
         e = e || window.event;
         e.preventDefault();
         // calculate the new cursor position:
@@ -45,6 +46,7 @@ class PanController{
     }
 
     dragMouseDown(e) {
+        // mouse drag event
         e = e || window.event;
         e.preventDefault();
 
@@ -64,6 +66,7 @@ class PanController{
     }
 
     recalculateVisibleCells(){
+        // update visible grid cells: destroy out-of-window cells and fill blank space
 
         this.lastX = this.mouseX;
         this.lastY = this.mouseY;
@@ -112,8 +115,6 @@ var app = new Vue({
         isClickValid: true,
         autoFit: false
     },
-    created: function () {
-    },
     mounted: function () {
         this.handleResize();
         this.pc = new PanController(this, document.getElementById("grid"));
@@ -122,6 +123,7 @@ var app = new Vue({
 
 
         loadFile: function(event){
+            // load RLE file and update GUI with its content
             let file = event.target.files[0];
             let _this = this;
             let onload = function(fileContent) {
@@ -131,6 +133,7 @@ var app = new Vue({
         },
 
         readFileAsync: function(file, onloadFunction){
+            // read text file
             let reader = new FileReader();
             reader.onload = function(event) {
                 // console.log(event.target.result);
@@ -140,6 +143,7 @@ var app = new Vue({
         },
 
         decodeRLE: function(encodedTxt){
+            // parse content string of RLE file to get the set of alive cells
             let lines = encodedTxt.split("\n");
 
             l = -1;
@@ -203,6 +207,7 @@ var app = new Vue({
         },
 
         updateGUIfromRLE(encodedTxt){
+            // create visible grid from content string of RLE file
             let aliveCellsRC, maxR, maxC;
             [aliveCellsRC, maxR, maxC] = this.decodeRLE(encodedTxt); 
             
@@ -217,6 +222,7 @@ var app = new Vue({
         },
 
         correctSize(preferredWidth, preferredHeight){
+            // correct the size: enlarge the too-small dimension
             let cellWidth = window.innerWidth / preferredWidth;
             let h = window.innerHeight-document.querySelector("nav").clientHeight;
             let cellHeight = h / preferredHeight;
@@ -259,12 +265,15 @@ var app = new Vue({
         },
 
         startPlaying: function(){
+            // start animation
             this.status = "playing";
             this.labBtnPlayPause = "Pause";
             this.gameStep();
         },
 
         gameStep: function(repeat=true){
+            // do Game of Life step
+
             let start = performance.now();
             this.board.step();
             let waitingTime = Math.floor(1000/this.fps);
@@ -278,16 +287,18 @@ var app = new Vue({
         },
 
         stopPlaying: function(){
+            // pause animation
             this.status = "paused";
             this.labBtnPlayPause = "Play";
         },
 
         cellClick: function(cell){
-            if(this.isClickValid)
+            if(this.isClickValid)  // click is valid if not dragging the grid
                 cell.toggleStatus();
         },
 
         clearClick: function(){
+            // clear the grid
             this.stopPlaying();
             this.board.clear();
         },
@@ -298,8 +309,10 @@ var app = new Vue({
         },
 
         autoFitGrid(){
+            // automatically move and resize visible grid
             let minC=null, maxC=null, minR=null, maxR=null;
             let first = true;
+            // search for grid limits
             for (let pair of this.board.aliveCellsRC) {
                 pair = JSON.parse(pair);
                 if(first){
@@ -321,7 +334,7 @@ var app = new Vue({
                 }
             }
 
-            if(minC == null){
+            if(minC == null){ // if there are no alive cells
                 minR = 0;
                 maxR = 0;
                 minC = 0;
@@ -329,7 +342,8 @@ var app = new Vue({
             }
 
             let tcX = minC-2, tcY = minR-2;
-
+            
+            // to avoid to many changes in visible grid position
             if(1 <= tcX - this.board.topLeftCornerX && tcX - this.board.topLeftCornerX <=3)
                 tcX = this.board.topLeftCornerX;
             if(1 <= tcY - this.board.topLeftCornerY && tcY - this.board.topLeftCornerY <=3)
@@ -338,7 +352,8 @@ var app = new Vue({
             this.board.setTopCorner(tcX, tcY);
             let width, height;
             [width, height] = this.correctSize(maxC - minC + 5, maxR - minR + 5);
-
+            
+            // to avoid to many changes in visible grid dimension
             if(1 <= this.board.visibleWidth - width && this.board.visibleWidth - width <=6)
                 width = this.board.visibleWidth;
             if(1 <= this.board.visibleHeight - height && this.board.visibleHeight - height <=6)
@@ -348,6 +363,7 @@ var app = new Vue({
         },
 
         handleWheel: function(event){
+            // mouse wheel -> change zoom
             var y = event.deltaY;
             if(y == 0)
                 return;
@@ -366,12 +382,14 @@ var app = new Vue({
         },
 
         handleResize: function(){
+            // calculate grid height from grid width
             let h = window.innerHeight-document.querySelector("nav").clientHeight;
             this.board.visibleHeight = Math.ceil(h / document.querySelector(".dead").clientHeight);
             this.board.updateVisibleGrid();
         },
 
         setTheme(theme){
+            // change theme
             let root = document.documentElement;
             switch(theme){
                 case "Blue":
