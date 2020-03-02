@@ -109,7 +109,8 @@ var app = new Vue({
         labBtnPlayPause: "Play",
         board: new Board(28, 28),
         fps: 30,
-        isClickValid: true
+        isClickValid: true,
+        autoFit: false
     },
     created: function () {
     },
@@ -204,20 +205,26 @@ var app = new Vue({
         updateGUIfromRLE(encodedTxt){
             let aliveCellsRC, maxR, maxC;
             [aliveCellsRC, maxR, maxC] = this.decodeRLE(encodedTxt); 
-            let cellWidth = window.innerWidth / maxC;
-            let h = window.innerHeight-document.querySelector("nav").clientHeight;
-            let cellHeight = h / maxR;
-            if(cellWidth > cellHeight)
-                maxC = Math.ceil(window.innerWidth / cellHeight);
-            else if(cellHeight > cellWidth)
-                maxR = Math.ceil(h / cellWidth);
+            
+            [maxC, maxR] = this.correctSize(maxC, maxR);
 
             this.board.setContent(aliveCellsRC);
             this.board.setTopCorner(0, 0);
-            this.board.setDimension(maxR, maxC);
+            this.board.setDimension(maxC, maxR);
 
             document.getElementById("grid").style.top = "0px";
             document.getElementById("grid").style.left = "0px";
+        },
+
+        correctSize(preferredWidth, preferredHeight){
+            let cellWidth = window.innerWidth / preferredWidth;
+            let h = window.innerHeight-document.querySelector("nav").clientHeight;
+            let cellHeight = h / preferredHeight;
+            if(cellWidth > cellHeight)
+                preferredWidth = Math.ceil(window.innerWidth / cellHeight);
+            else if(cellHeight > cellWidth)
+                preferredHeight = Math.ceil(h / cellWidth);
+            return [preferredWidth, preferredHeight];
         },
 
         load: function(){
@@ -263,6 +270,8 @@ var app = new Vue({
             let waitingTime = Math.floor(1000/this.fps);
             // console.log(waitingTime)
             let elapsed = performance.now() - start;
+            if(this.autoFit)
+                this.autoFitGrid();
             waitingTime = Math.max(0, waitingTime-elapsed);
             if(repeat && this.status == "playing")
                 setTimeout(this.gameStep, waitingTime);
@@ -284,8 +293,45 @@ var app = new Vue({
         },
 
         autoFitChanged(){
-            if(this.board.autoFit)
-                this.board.updateVisibleGrid();
+            if(this.autoFit)
+                this.autoFitGrid();
+        },
+
+        autoFitGrid(){
+            let minC=null, maxC=null, minR=null, maxR=null;
+            let first = true;
+            for (let pair of this.board.aliveCellsRC) {
+                pair = JSON.parse(pair);
+                if(first){
+                    first = false;
+                    minR = pair[0];
+                    maxR = pair[0];
+                    minC = pair[1];
+                    maxC = pair[1];
+                }
+                if (pair[0] < minR) {
+                    minR = pair[0];
+                } else if (pair[0] > maxR){
+                    maxR = pair[0];
+                }
+                if (pair[1] < minC) {
+                    minC = pair[1];
+                } else if (pair[1] > maxC) {
+                    maxC = pair[1];
+                }
+            }
+
+            if(minC == null){
+                minR = 0;
+                maxR = 0;
+                minC = 0;
+                maxC = 0;
+            }
+
+            this.board.setTopCorner(minC-2, minR-2);
+            let width, height;
+            [width, height] = this.correctSize(maxC - minC + 5, maxR - minR + 5)
+            this.board.setDimension(width, height);
         },
 
         handleWheel: function(event){

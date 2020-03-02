@@ -42,48 +42,19 @@ class Cell {
 
 
 class Board{
-    
+
     constructor(visibleWidth, visibleHeight){
         this.topLeftCornerX = 0;
         this.topLeftCornerY = 0;
         this.visibleHeight = visibleHeight;
         this.visibleWidth = visibleWidth;
 
-        this._aliveCellsRC = new Set();
+        this.aliveCellsRC = new Set();
         this.visibleGrid = [];
         this.updateVisibleGrid();
-        this.autoFit = false;
     }
 
     updateVisibleGrid(){
-        if(this.autoFit){
-            let minC, maxC, minR, maxR;
-            let first = true;
-            for (let pair of this._aliveCellsRC) {
-                pair = JSON.parse(pair);
-                if(first){
-                    first = false;
-                    minR = pair[0];
-                    maxR = pair[0];
-                    minC = pair[1];
-                    maxC = pair[1];
-                }
-                if (pair[0] < minR) {
-                    minR = pair[0];
-                } else {
-                    maxR = pair[0];
-                }
-                if (pair[1] < minC) {
-                    minC = pair[1];
-                } else {
-                    maxC = pair[1];
-                }
-            }
-            this.topLeftCornerX = minC;
-            this.topLeftCornerY = minR;
-            this.visibleWidth = maxC - minC + 1;
-            this.visibleHeight = maxR - minR + 1;
-        }
 
         let tx = this.topLeftCornerX;
         let ty = this.topLeftCornerY;
@@ -98,7 +69,7 @@ class Board{
             }
             newVisibleGrid.push(row);
         }
-        for (let pair of this._aliveCellsRC) {
+        for (let pair of this.aliveCellsRC) {
             pair = JSON.parse(pair);
             let cy = pair[0] - ty;
             let cx = pair[1] - tx;
@@ -111,18 +82,18 @@ class Board{
     update(cell){
         let jsonPosition = JSON.stringify([cell.row, cell.column]);
         if(cell.status == "alive"){
-            if(!(this._aliveCellsRC.has(jsonPosition)))
-                this._aliveCellsRC.add(jsonPosition);
+            if(!(this.aliveCellsRC.has(jsonPosition)))
+                this.aliveCellsRC.add(jsonPosition);
         } else {
-            if(this._aliveCellsRC.has(jsonPosition))
-                this._aliveCellsRC.delete(jsonPosition);
+            if(this.aliveCellsRC.has(jsonPosition))
+                this.aliveCellsRC.delete(jsonPosition);
         }
     }
 
     step(){
         // calculate number of neighbors
         let numNeighbors = {};
-        for (const pair of this._aliveCellsRC) {
+        for (const pair of this.aliveCellsRC) {
             let pairNeighbors = this._getNeighbors(pair);
             for(const neigh of pairNeighbors){
                 if(numNeighbors[neigh] == undefined)
@@ -135,17 +106,17 @@ class Board{
         let newAliveCellsRC = new Set();
         for (let pair in numNeighbors) {
             let num = numNeighbors[pair];
-            if(num == 3 || (num == 2 && this._aliveCellsRC.has(pair)))
+            if(num == 3 || (num == 2 && this.aliveCellsRC.has(pair)))
                 newAliveCellsRC.add(pair);
         }
-        this._aliveCellsRC = newAliveCellsRC;
+        this.aliveCellsRC = newAliveCellsRC;
 
         // update visible grid
         this.updateVisibleGrid();
     }
 
     clear(){
-        this._aliveCellsRC = new Set();
+        this.aliveCellsRC = new Set();
         this.updateVisibleGrid();
     }
 
@@ -167,7 +138,7 @@ class Board{
     }
 
     setContent(aliveCellsRC){
-        this._aliveCellsRC = aliveCellsRC;
+        this.aliveCellsRC = aliveCellsRC;
         this.updateVisibleGrid();
     }
 
@@ -177,9 +148,9 @@ class Board{
         this.updateVisibleGrid();
     }
 
-    setDimension(maxR, maxC){
-        this.visibleWidth = maxC;
-        this.visibleHeight = maxR;
+    setDimension(vWidth, vHeight){
+        this.visibleWidth = vWidth;
+        this.visibleHeight = vHeight;
         this.updateVisibleGrid();
     }
 
@@ -189,8 +160,8 @@ class Board{
         this.updateVisibleGrid();
     }
 
-    changeDimension(deltaWidht, deltaHeight){
-        this.visibleWidth += deltaWidht;
+    changeDimension(deltaWidth, deltaHeight){
+        this.visibleWidth += deltaWidth;
         this.visibleHeight += deltaHeight;
         this.updateVisibleGrid();
     }
