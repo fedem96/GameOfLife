@@ -15,7 +15,7 @@ Every cell in the board can be alive or dead. At each time step, the new board i
 # About this implementation
 This repository is a web implementation of the *Game of Life* made in HTML, CSS, and Javascript (using Vue.js).
 
-## Grapical User Interface
+## Graphical User Interface
 ![Graphical User Interface of this implementation of Game of Life](img/gui.png "Graphical User Interface")
 
 ## Features
